@@ -1,0 +1,193 @@
+package com.live.sapphire.tv.Adapters;
+
+
+import android.app.Activity;
+import android.content.Context;
+import android.support.v4.content.ContextCompat;
+import android.util.Log;
+import android.view.KeyEvent;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.BaseAdapter;
+import android.widget.Button;
+import android.widget.ImageView;
+import android.widget.RelativeLayout;
+
+import com.live.sapphire.tv.AppConfigurations;
+import com.live.sapphire.tv.Customized.ImageDimensions;
+import com.live.sapphire.tv.Customized.SubcategoryInfo;
+import com.live.sapphire.tv.R;
+import com.live.sapphire.tv.Utilities;
+import com.squareup.picasso.Picasso;
+
+import java.util.ArrayList;
+
+public class SubcategoriesAdapter extends BaseAdapter {
+    private Activity mActivity;
+    private Context mContext;
+    private ViewHolder mViewHolder;
+    private SendData mSendData;
+    private LayoutInflater mLayoutInflater;
+    private ArrayList <SubcategoryInfo> mSubcategoryList;
+
+    public SubcategoriesAdapter (SendData subcategoryId, Activity activity, ArrayList <SubcategoryInfo> subcategoryList) {
+        mActivity = activity;
+        mContext = mActivity.getApplicationContext ();
+        mSendData = subcategoryId;
+        mSubcategoryList = subcategoryList;
+//        mLayoutInflater = LayoutInflater.from(mContext);
+        mLayoutInflater = (LayoutInflater)mContext.getSystemService (Context.LAYOUT_INFLATER_SERVICE);
+    }
+
+    @Override
+    public int getCount () {
+        return mSubcategoryList.size ();
+    }
+
+    @Override
+    public Object getItem (int position) {
+        return mSubcategoryList.get (position);
+    }
+
+    @Override
+    public long getItemId (int position) {
+        return position;
+    }
+
+    @Override
+    public View getView (final int position, final View convertView, final ViewGroup parent) {
+        View view = convertView;
+        if (view == null) {
+            view = mLayoutInflater.inflate (R.layout.adapter_layout_subcategories, parent, false);
+            mViewHolder = new ViewHolder ();
+            mViewHolder.layout = (RelativeLayout)view.findViewById (R.id.main_layout);
+            mViewHolder.imageView = (ImageView)view.findViewById (R.id.child_categories_grid_image);
+            mViewHolder.button = (Button)view.findViewById (R.id.child_categories_grid_button);
+            view.setTag (mViewHolder);
+        } else {
+            mViewHolder = (ViewHolder)view.getTag ();
+        }
+        mViewHolder.layout.setClickable (true);
+        mViewHolder.layout.setFocusable (true);
+        mViewHolder.layout.setFocusableInTouchMode (true);
+        mViewHolder.imageView.setClickable (true);
+        mViewHolder.imageView.setFocusable (true);
+        mViewHolder.imageView.setFocusableInTouchMode (true);
+        mViewHolder.button.setClickable (true);
+        mViewHolder.button.setFocusable (true);
+        mViewHolder.button.setFocusableInTouchMode (true);
+        View.OnClickListener clickListener = new View.OnClickListener () {
+            @Override
+            public void onClick (View view) {
+                mSendData.sendData2NewScreen (mSubcategoryList.get (position));
+            }
+        };
+        View.OnFocusChangeListener focusChangeListener = new View.OnFocusChangeListener () {
+            @Override
+            public void onFocusChange (View view, boolean hasFocus) {
+                if (hasFocus) {
+                    AppConfigurations.setFocusOnCurrentItem (mContext, view);
+                } else {
+                    AppConfigurations.releaseFocusFromCurrentItem (mContext, view);
+                }
+            }
+        };
+        View.OnKeyListener keyListener = new View.OnKeyListener () {
+            @Override
+            public boolean onKey (View view, int keyCode, KeyEvent keyEvent) {
+                int keyAction = keyEvent.getAction ();
+                if (keyAction == KeyEvent.ACTION_DOWN) {
+                    if (keyCode == KeyEvent.KEYCODE_DPAD_UP) { // TODO: for moving UP in grid-view
+                        int movingUpCursor = position-Utilities.mNumColumnsForSideGridView;
+                        if (movingUpCursor >= 0) {
+                            mSendData.moveUpAndDown (movingUpCursor);
+                            return false;
+                        } else {
+                            return true;
+                        }
+                    } else if (keyCode == KeyEvent.KEYCODE_DPAD_DOWN) { // TODO: for moving DOWN in grid-view
+                        int movingDownCursor = position+Utilities.mNumColumnsForSideGridView;
+                        if (movingDownCursor <= getCount ()-1) {
+                            mSendData.moveUpAndDown (movingDownCursor);
+                            return false;
+                        } else {
+                            return true;
+                        }
+                    } else if (keyCode == KeyEvent.KEYCODE_DPAD_LEFT) { // TODO: for moving backward from (x+1)th row's first item to (x)th row's last item
+                        if (position != 0 && position%Utilities.mNumColumnsForSideGridView == 0) {
+                            mSendData.moveBackward (position-1);
+                            return true;
+                        }
+                        return false;
+                    } else if (keyCode == KeyEvent.KEYCODE_DPAD_RIGHT) {
+                        if (position%Utilities.mNumColumnsForSideGridView == (Utilities.mNumColumnsForSideGridView-1)) { // TODO: move from xth row's last item to (x+1)th row's first item
+                            mSendData.moveForward (position+1);
+                            return true;
+                        } else if (position == getCount ()-1) { // TODO: block the auto-move of grid-view's last item to prev row's last item
+                            return true;
+                        }
+                    }
+                } else if (keyAction == KeyEvent.ACTION_UP) {
+                    if (keyCode == KeyEvent.KEYCODE_DPAD_DOWN) { // TODO: block switching between fragments by Down-Key
+                        return true;
+                    }
+                }
+                return false;
+            }
+        };
+
+        mViewHolder.layout.setOnClickListener (clickListener);
+        mViewHolder.imageView.setOnClickListener (clickListener);
+        mViewHolder.button.setOnClickListener (clickListener);
+        mViewHolder.layout.setOnFocusChangeListener (focusChangeListener);
+        mViewHolder.imageView.setOnFocusChangeListener (focusChangeListener);
+        mViewHolder.button.setOnFocusChangeListener (focusChangeListener);
+        mViewHolder.layout.setOnKeyListener (keyListener);
+        mViewHolder.imageView.setOnKeyListener (keyListener);
+        mViewHolder.button.setOnKeyListener (keyListener);
+        SubcategoryInfo info = mSubcategoryList.get (position);
+        String subcategoryName = info.getSubcategoryName ();
+        int maxLength = 15;
+        if (subcategoryName.length () > maxLength) {
+            subcategoryName = subcategoryName.substring (0, maxLength);
+            subcategoryName += "..";
+        }
+        mViewHolder.button.setText (subcategoryName);
+        try {
+            String thumbnailUrl = info.getThumbnailUrl ();
+            ImageDimensions imageDimensions = AppConfigurations.getImageDimensions (mActivity.getApplicationContext ());
+            if (Utilities.isThumbnailUrlValid (thumbnailUrl)) {
+                Picasso.with (mContext)
+                        .load (thumbnailUrl)
+                        .resize (imageDimensions.getWidth (), imageDimensions.getHeight ())
+                        .into (mViewHolder.imageView);
+            } else {
+                Picasso.with (mContext)
+                        .load (R.drawable.app_icon)
+                        .resize (imageDimensions.getWidth (), imageDimensions.getHeight ())
+                        .into (mViewHolder.imageView);
+            }
+        } catch (Exception e) {
+            Log.e ("Exception", e.getMessage ());
+        }
+        return view;
+    }
+
+    private static class ViewHolder {
+        RelativeLayout layout;
+        ImageView imageView;
+        Button button;
+    }
+
+
+    public interface SendData {
+        void sendData2NewScreen (SubcategoryInfo info);
+
+        void moveForward (int position);
+
+        void moveBackward (int position);
+
+        void moveUpAndDown (int position);
+    }
+}
